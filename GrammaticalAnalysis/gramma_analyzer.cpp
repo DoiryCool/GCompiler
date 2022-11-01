@@ -11,59 +11,64 @@ namespace gcp {
 		m_current_input = LA.nextInput();
 		// output
 		ofs << m_current_input.getTwoTuple() << std::endl;
-		std::cout << "[词] : 识别到第一个单词为：" + m_current_input.getTwoTuple() << std::endl;
+		WriteToDebugFile("[词] : 识别到第一个单词为：" + m_current_input.getTwoTuple());
 	}
 
-	bool GrammaAnalyzer::WriteToFile(string cont) {
-		std::ofstream ofs("out.txt", std::ios::end);
-		std::ofstream dfs("debug.txt", std::ios::end);
-		ofs << cont << std::endl;
+	bool GrammaAnalyzer::WriteToDebugFile(string cont) {
+		std::ofstream dfs("debug.txt", std::ios::app);
 		dfs << cont << std::endl;
-		ofs.close();
+		std::cout << cont << std::endl;
 		dfs.close();
+		return true;
+	}
+
+	bool GrammaAnalyzer::WriteToOutFile(string cont) {
+		std::ofstream ofs("out.txt", std::ios::app);
+		ofs << cont << std::endl;
+		std::cout << cont << std::endl;
+		ofs.close();
 		return true;
 	}
 
 	bool GrammaAnalyzer::match(string type) {
 		if (type == m_current_input.getType()) {
-			WriteToFile("[语] : 【" + type + "】与读头下【" + m_current_input.getType() + "】匹配成功");
-			std::cout << "[语] : 【" + type + "】与读头下【" + m_current_input.getType() + "】匹配成功" << std::endl;
+			WriteToDebugFile("[语] : 【" + type + "】与读头下【" + m_current_input.getType() + "】匹配成功");
 			m_current_input = LA.nextInput();
-			std::cout << "[词] : 识别到下一个单词为：" + m_current_input.getTwoTuple() << std::endl;
+			WriteToDebugFile("[词] : 识别到下一个单词为：" + m_current_input.getTwoTuple());
 			return true;
 		}
-		std::cout << "[语] ERROR : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败" << std::endl;
-		WriteToFile("[语] ERROR : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败");
+		WriteToDebugFile("[语] ERROR : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败");
 		m_current_input = LA.nextInput();
 		return false;
 	}
 
 	bool GrammaAnalyzer::P() {
 		// P -> string I ; D
-		WriteToFile("[语] : 开始处理 <程序> → <变量说明部分>;<语句部分>");
-		std::cout << "[语] : 开始处理 <程序> → <变量说明部分>;<语句部分>" << std::endl;
+		WriteToDebugFile("[语] : <程序> → <变量说明部分>;<语句部分>");
 		if (!match("string")) return false;
+		WriteToDebugFile("[语] : <变量说明部分> → [string]<标识符列表>");
 		I("string");
 		if (!match("分号")) return false;
 		D();
-		WriteToFile("-------------------------语法分析结束--------------------");
-		std::cout << "-------------------------语法分析结束--------------------" << std::endl;
+		WriteToDebugFile("-------------------------语法分析结束--------------------");
 		return true;
 	}
 
 	bool GrammaAnalyzer::I(string type) {
 		// I -> i Ip 
-		std::cout << "[语] : 开始处理 <标识符列表> → <标识符列表>,<标识符>|<标识符>" << std::endl;
+		WriteToDebugFile("[语] : <标识符列表> → <标识符列表><标识符列表prime>");
 		string name = m_current_input.getValue();
 		m_identifer_table.AddName(name);
 		m_identifer_table.UpdateType(name, type);
 		if (!match("标识符")) return false;
+		WriteToDebugFile("[翻] : 填写标识符 【" + name + "】类型为" + type);
 		Ip(type);
 		return true;
 	}
 
 	bool GrammaAnalyzer::D() {
 		// D -> S ; Dp
+		WriteToDebugFile("[语] : <语句部分> → <语句><语句部分prime>");
 		S();
 		if (!match("分号")) return false;
 		Dp();
@@ -74,16 +79,19 @@ namespace gcp {
 		// Ip -> , i Ip | ε
 		if (m_current_input.getType() == "逗号") {
 			// Ip -> , i Ip
+			WriteToDebugFile("[语] : 选择 <标识符列表prime> →,<标识符列表><标识符列表prime>");
 			if (!match("逗号")) return false;
 			string name = m_current_input.getValue();
 			m_identifer_table.AddName(name);
 			if (!match("标识符")) return false;
+			WriteToDebugFile("[翻] : 填写标识符 【" + name + "】类型为" + type);
 			m_identifer_table.UpdateType(name, type);
 			Ip(type);
 			return true;
 		}
 		if (m_current_input.getType() == "分号") {
 			// Ip -> ε
+			WriteToDebugFile("[语] : 选择 <标识符列表prime> → ε");
 			return true;
 		}
 		return false;
@@ -92,14 +100,20 @@ namespace gcp {
 	bool GrammaAnalyzer::S() {
 		// S -> A | C | L
 		if (m_current_input.getType() == "标识符") {
+			// S -> A
+			WriteToDebugFile("[语] : 选择 <语句> → <赋值语句>");
 			A();
 			return true;
 		}
 		if (m_current_input.getType() == "if") {
+			// S -> C
+			WriteToDebugFile("[语] : 选择 <语句> → <条件语句>");
 			C();
 			return true;
 		}
 		if (m_current_input.getType() == "do") {
+			// S -> L
+			WriteToDebugFile("[语] : 选择 <语句> → <循环语句>");
 			L();
 			return true;
 		}
@@ -109,6 +123,8 @@ namespace gcp {
 	bool GrammaAnalyzer::Dp() {
 		// Dp -> S ; Dp | ε
 		if (m_current_input.getType() == "标识符" || m_current_input.getType() == "if" || m_current_input.getType() == "do") {
+			// Dp -> S ; Dp 
+			WriteToDebugFile("[语] : 选择 <语句部分prime> → <语句> ; <语句部分prime>");
 			S();
 			if (!match("分号")) return false;
 			Dp();
@@ -116,10 +132,13 @@ namespace gcp {
 		}
 		if (m_current_input.getType() == "end") {
 			// Dp -> ε
+			WriteToDebugFile("[语] : 选择 <语句部分prime> → ε");
 			return true;
 		}
 		if (m_current_input.getType() == "#") {
-			WriteToFile("-------------------------词法分析结束--------------------");
+			// Dp -> ε
+			WriteToDebugFile("[语] : 选择 <语句部分prime> → ε");
+			WriteToDebugFile("-------------------------词法分析结束--------------------");
 			std::cout << "-------------------------词法分析结束--------------------" << std::endl;
 			return true;
 		}
@@ -128,18 +147,22 @@ namespace gcp {
 
 	bool GrammaAnalyzer::A() {
 		// A -> i = E
+		WriteToDebugFile("[语] : <赋值语句> → <标识符> = <表达式>");
 		string name = m_current_input.getValue();
+		WriteToDebugFile("[翻] : 获取赋值语句标识符 【" + name + "】");
 		if (!match("标识符")) return false;
 		if (!match("赋值号")) return false;
 		IdentiferTable::identifier E1 = E();
 		m_identifer_table.UpdateValue(name, E1.value);
+		WriteToDebugFile("[翻] : 更新标识符 【" + name + "】的值为"+ E1.value);
 		m_middle_code_table.AddItem("=", E1.value, "null", name);
-		std::cout << "[语义] ： 产生四元式" << std::endl;
+		WriteToDebugFile("[翻] ： 产生赋值语句四元式");
 		return true;
 	}
 
 	bool GrammaAnalyzer::C() {
 		// C -> if ( F ) N else N 
+		WriteToDebugFile("[语] :  if （<条件>）<嵌套语句> else <嵌套语句>");
 		if (!match("if")) return false;
 		if (!match("左括号")) return false;
 		IdentiferTable::identifier F1 = F();
@@ -161,6 +184,7 @@ namespace gcp {
 
 	bool GrammaAnalyzer::L() {
 		// L -> do N while ( F )
+		WriteToDebugFile("[语] : do <嵌套语句> while （<条件>）");
 		NEXTR : int nextP = LA.getPointer();
 		if (!match("do")) return false;
 		int NEXT = m_middle_code_table.getNXQ();
@@ -174,12 +198,12 @@ namespace gcp {
 			LA.setPointer(nextP);
 			goto NEXTR;
 		}
-		std::cout << "[语义] ： 产生四元式" << std::endl;
 		return true;
 	}
 
 	IdentiferTable::identifier GrammaAnalyzer::E() {
 		// E -> G Ep
+		WriteToDebugFile("[语] : <表达式> → <项><表达式prime>");
 		IdentiferTable::identifier tempG = G();
 		IdentiferTable::identifier tempEp = Ep(tempG);
 		return tempEp;
@@ -187,6 +211,7 @@ namespace gcp {
 
 	IdentiferTable::identifier GrammaAnalyzer::F() {
 		// F -> E g E
+		WriteToDebugFile("[语] : <条件> → <表达式><关系运算符><表达式>");
 		IdentiferTable::identifier E1 = E();
 		string operater = m_current_input.getValue();
 
@@ -245,17 +270,21 @@ namespace gcp {
 			}
 		}
 		m_middle_code_table.AddItem(operater, E1.name, E2.name, temp.name);
-		std::cout << "[语义] ： 产生四元式" << std::endl;
+		WriteToDebugFile("[翻] ： 产生关系运算四元式");
 		return temp;
 	}
 
 	bool GrammaAnalyzer::N() {
 		// N -> S | M
 		if (m_current_input.getType() == "标识符" || m_current_input.getType() == "if" || m_current_input.getType() == "do") {
+			// N -> S 
+			WriteToDebugFile("[语] : 选择 <嵌套语句> → <语句>");
 			S();
 			return true;
 		}
 		if (m_current_input.getType() == "start") {
+			// N -> M
+			WriteToDebugFile("[语] : 选择 <嵌套语句> → <复合语句>");
 			M();
 			return true;
 		}
@@ -264,6 +293,7 @@ namespace gcp {
 
 	IdentiferTable::identifier GrammaAnalyzer::G() {
 		// G -> Y Gp
+		WriteToDebugFile("[语] : <项> → <因子><项prime>");
 		IdentiferTable::identifier tempY = Y();
 		IdentiferTable::identifier tempGp = Gp(tempY);
 		return tempGp;
@@ -272,19 +302,23 @@ namespace gcp {
 	IdentiferTable::identifier GrammaAnalyzer::Ep(IdentiferTable::identifier tempId) {
 		// Ep -> + G Ep | ε
 		if (m_current_input.getType() == "连接运算符") {
+			// Ep -> + G Ep
+			WriteToDebugFile("[语] : 选择 <表达式prime> → <连接运算符><项><表达式prime>");
 			match("连接运算符");
 			IdentiferTable::identifier tempG = G();
 			IdentiferTable::identifier temp = m_temp_var_table.tempVar();
+			WriteToDebugFile("[翻] : 创建连接运算临时变量");
 			temp.type = tempId.type;
 			temp.value = tempId.value.substr(0, tempId.value.length() - 2) + tempG.value.substr(1, tempG.value.length() - 1);
 			m_temp_var_table.addTempVar(temp);
 			m_middle_code_table.AddItem("+", tempId.name != "" ?tempId.name : tempId.value, tempG.name != "" ? tempG.name : tempG.value, temp.name);
-			std::cout << "[语义] ： 产生四元式" << std::endl;
+			WriteToDebugFile("[翻] ： 产生连接运算四元式");
 			IdentiferTable::identifier tempEp = Ep(temp);
 			return tempEp;
 		}
 		if (m_current_input.getType() == "关系运算符" || m_current_input.getType() == "分号" || m_current_input.getType() == "右括号") {
 			// Ep -> ε
+			WriteToDebugFile("[语] : 选择 <表达式prime> → ε");
 			return tempId;
 		}
 		return tempId;
@@ -293,19 +327,27 @@ namespace gcp {
 	IdentiferTable::identifier GrammaAnalyzer::Y() {
 		// Y -> i | s | ( E )
 		if (m_current_input.getType() == "标识符") {
+			// Y -> i
+			WriteToDebugFile("[语] : 选择 <因子> → <标识符>");
 			string name = m_current_input.getValue();
 			match("标识符");
+			WriteToDebugFile("[翻] : 获取表达式中标识符【" + name + "】值" + m_identifer_table.getIdentifer(name).value);
 			return m_identifer_table.getIdentifer(name);
 		}
 		if (m_current_input.getType() == "字符串") {
+			// Y -> s
+			WriteToDebugFile("[语] : 选择 <因子> → <字符串>");
 			string value = m_current_input.getValue();
 			match("字符串");
 			IdentiferTable::identifier tempid;
+			WriteToDebugFile("[翻] : 创建字符串临时变量");
 			tempid.value = value;
 			tempid.type = "string";
 			return tempid;
 		}
 		if (m_current_input.getType() == "左括号") {
+			// Y -> i
+			WriteToDebugFile("[语] : 选择 <因子> → <左括号>");
 			match("左括号");
 			IdentiferTable::identifier tempE = E();
 			match("右括号");
@@ -318,6 +360,8 @@ namespace gcp {
 	IdentiferTable::identifier GrammaAnalyzer::Gp(IdentiferTable::identifier tempIn) {
 		// Gp -> j n Gp | ε
 		if (m_current_input.getType() == "重复运算符") {
+			// Gp -> j n Gp
+			WriteToDebugFile("[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
 			match("重复运算符");
 			IdentiferTable::identifier tempId;
 			tempId.value = m_current_input.getValue();
@@ -330,11 +374,13 @@ namespace gcp {
 			}
 			m_temp_var_table.addTempVar(temp);
 			m_middle_code_table.AddItem("*", tempIn.name,tempId.value, temp.name);
-			std::cout << "[语义] ： 产生四元式" << std::endl;
+			WriteToDebugFile("[翻] ： 产生重复运算四元式");
 			IdentiferTable::identifier Gp1 = Gp(temp);
 			return Gp1;
 		}
 		if (m_current_input.getType() == "连接运算符") {
+			// Gp -> ε
+			WriteToDebugFile("[语] : 选择 <项prime> → ε");
 			return tempIn;
 		}
 		return tempIn;
@@ -342,6 +388,7 @@ namespace gcp {
 
 	bool GrammaAnalyzer::M() {
 		// M -> start D end
+		WriteToDebugFile("[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
 		if (!match("start")) return false;
 		D();
 		if (!match("end")) return false;

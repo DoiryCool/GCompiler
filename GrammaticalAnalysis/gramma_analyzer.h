@@ -10,8 +10,6 @@
 
 using std::string;
 
-using namespace std;
-
 namespace gcp {
 
 	class GrammaAnalyzer
@@ -29,7 +27,9 @@ namespace gcp {
 		public:
 			GrammaAnalyzer();
 			~GrammaAnalyzer();
-			bool WriteToFile(string);
+			bool WriteToDebugFile(string);
+			bool WriteToOutFile(string);
+
 			bool match(string);
 			bool P();
 			bool I(string);
