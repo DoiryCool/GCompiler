@@ -6,7 +6,7 @@ namespace gcp {
 	}
 
 	IdentiferTable::identifier TempVarTable::tempVar() {
-		int index = table.size();
+		int index = table.size() + 1;
 		IdentiferTable::identifier t;
 		t.name = "T" + std::to_string(index);
 		return t;
@@ -19,7 +19,7 @@ namespace gcp {
 
 	void TempVarTable::Print() {
 		std::cout << "---------临时变量表---------" << std::endl;
-		std::cout << "---------(标示符名 ， 类型 ， 值)---------" << std::endl;
+		std::cout << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
 		for (int i = 0; i < table.size(); i++) {
 			std::cout << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
 		}

@@ -46,7 +46,7 @@ namespace gcp {
 	}
 
 	void IdentiferTable::Print() {
-		std::cout << "---------(标示符名 ， 类型 ， 值)---------" << std::endl;
+		std::cout << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
 		for (int i = 0; i < table.size(); i++) {
 			std::cout << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
 		}

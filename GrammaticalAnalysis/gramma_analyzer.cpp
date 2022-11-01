@@ -139,6 +139,9 @@ namespace gcp {
 			// Dp -> ε
 			WriteToDebugFile("[语] : 选择 <语句部分prime> → ε");
 			WriteToDebugFile("-------------------------词法分析结束--------------------");
+			// Dp -> ε
+			WriteToDebugFile("[语] : 选择 <语句部分prime> → ε");
+			WriteToDebugFile("-------------------------词法分析结束--------------------");
 			std::cout << "-------------------------词法分析结束--------------------" << std::endl;
 			return true;
 		}
@@ -149,11 +152,13 @@ namespace gcp {
 		// A -> i = E
 		WriteToDebugFile("[语] : <赋值语句> → <标识符> = <表达式>");
 		string name = m_current_input.getValue();
-		WriteToDebugFile("[翻] : 获取赋值语句标识符 【" + name + "】");
 		if (!match("标识符")) return false;
 		if (!match("赋值号")) return false;
 		IdentiferTable::identifier E1 = E();
 		m_identifer_table.UpdateValue(name, E1.value);
+		WriteToDebugFile("[翻] : 更新标识符 【" + name + "】的值为"+ E1.value);
+		m_middle_code_table.AddItem("=", E1.name != "" ? E1.name : E1.value, "null", name);
+		WriteToDebugFile("[翻] ： 产生赋值语句四元式");
 		WriteToDebugFile("[翻] : 更新标识符 【" + name + "】的值为"+ E1.value);
 		m_middle_code_table.AddItem("=", E1.value, "null", name);
 		WriteToDebugFile("[翻] ： 产生赋值语句四元式");
@@ -169,12 +174,15 @@ namespace gcp {
 
 		int trueExit = m_middle_code_table.getNXQ() + 2;
 		m_middle_code_table.AddItem("jnz", F1.name, "null", std::to_string(trueExit));
+		WriteToDebugFile("[翻] ： 产生if语句真出口四元式");
 		int falseExit = m_middle_code_table.getNXQ();
 		m_middle_code_table.AddItem("j", "null", "null", "0");
+		WriteToDebugFile("[翻] ： 产生if语句假出口四元式");
 		if (!match("右括号")) return false;
 		N();
 		int Exit = m_middle_code_table.getNXQ();
 		m_middle_code_table.AddItem("j", "null", "null", "0");
+		WriteToDebugFile("[翻] ： 产生if语句假出口四元式");
 		m_middle_code_table.backPath(falseExit, std::to_string(m_middle_code_table.getNXQ()));
 		if (!match("else")) return false;
 		N();
@@ -193,6 +201,7 @@ namespace gcp {
 		if (!match("左括号")) return false;
 		IdentiferTable::identifier F1 = F();
 		m_middle_code_table.AddItem("jnz", F1.name, "null", std::to_string(NEXT));
+		WriteToDebugFile("[翻] ： 产生while语句跳转四元式");
 		if (!match("右括号")) return false;
 		if (F1.value == "true") {
 			LA.setPointer(nextP);
@@ -222,6 +231,7 @@ namespace gcp {
 		temp.type = "bool";
 		temp.value = "false";
 		if (operater == "<") {
+			WriteToDebugFile("[翻] ： 产生小于四元式");
 			if (E1.value.length() < E2.value.length()) {
 				temp.value = "true";
 			}
@@ -230,6 +240,7 @@ namespace gcp {
 			}
 		}
 		if (operater == "<=") {
+			WriteToDebugFile("[翻] ： 产生小于等于四元式");
 			if (E1.value.length() <= E2.value.length()) {
 				temp.value = "true";
 			}
@@ -238,6 +249,7 @@ namespace gcp {
 			}
 		}
 		if (operater == ">") {
+			WriteToDebugFile("[翻] ： 产生大于四元式");
 			if (E1.value.length() > E2.value.length()) {
 				temp.value = "true";
 			}
@@ -246,6 +258,7 @@ namespace gcp {
 			}
 		}
 		if (operater == ">=") {
+			WriteToDebugFile("[翻] ： 产生大于等于四元式");
 			if (E1.value.length() >= E2.value.length()) {
 				temp.value = "true";
 			}
@@ -254,6 +267,7 @@ namespace gcp {
 			}
 		}
 		if (operater == "==") {
+			WriteToDebugFile("[翻] ： 产生等于四元式");
 			if (E1.value == E2.value) {
 				temp.value = "true";
 			}
@@ -262,6 +276,7 @@ namespace gcp {
 			}
 		}
 		if (operater == "<>") {
+			WriteToDebugFile("[翻] ： 产生不等于四元式");
 			if (E1.value != E2.value) {
 				temp.value = "true";
 			}
@@ -309,7 +324,7 @@ namespace gcp {
 			IdentiferTable::identifier temp = m_temp_var_table.tempVar();
 			WriteToDebugFile("[翻] : 创建连接运算临时变量");
 			temp.type = tempId.type;
-			temp.value = tempId.value.substr(0, tempId.value.length() - 2) + tempG.value.substr(1, tempG.value.length() - 1);
+			temp.value = tempId.value.substr(0, tempId.value.length() - 1) + tempG.value.substr(1, tempG.value.length() - 1);
 			m_temp_var_table.addTempVar(temp);
 			m_middle_code_table.AddItem("+", tempId.name != "" ?tempId.name : tempId.value, tempG.name != "" ? tempG.name : tempG.value, temp.name);
 			WriteToDebugFile("[翻] ： 产生连接运算四元式");
@@ -358,19 +373,20 @@ namespace gcp {
 	}
 
 	IdentiferTable::identifier GrammaAnalyzer::Gp(IdentiferTable::identifier tempIn) {
-		// Gp -> j n Gp | ε
+		// Gp -> * n Gp | ε
 		if (m_current_input.getType() == "重复运算符") {
 			// Gp -> j n Gp
 			WriteToDebugFile("[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
 			match("重复运算符");
 			IdentiferTable::identifier tempId;
+			WriteToDebugFile("[翻] : 创建重复运算临时变量");
 			tempId.value = m_current_input.getValue();
 			match("数字");
 			IdentiferTable::identifier temp = m_temp_var_table.tempVar();
 			temp.type = tempIn.type;
 			temp.value = tempIn.value;
 			for (int i = 0; i < std::stoi(tempId.value); i++) {
-				temp.value = temp.value.substr(0, temp.value.length() - 2) + temp.value.substr(1, temp.value.length()-1);
+				temp.value = temp.value.substr(0, temp.value.length() - 1) + tempIn.value.substr(1, tempIn.value.length() - 1);
 			}
 			m_temp_var_table.addTempVar(temp);
 			m_middle_code_table.AddItem("*", tempIn.name,tempId.value, temp.name);
