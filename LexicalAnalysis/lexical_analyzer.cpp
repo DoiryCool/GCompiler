@@ -31,6 +31,14 @@ namespace gcp {
 		ofs << s << std::endl;
 	}
 
+	int LexicalAnalyzer::getPointer() {
+		return POINTER;
+	}
+
+	void LexicalAnalyzer::setPointer(int POINTER) {
+		this->POINTER = POINTER;
+	}
+
 	string LexicalAnalyzer::getString() {
 		if (INPUT_STRING_FLAG == 1) return std::string(1, m_input_string[POINTER]);
 		else return "failed : The string is NULL.";
@@ -92,7 +100,7 @@ namespace gcp {
 			}
 			if (status == "0202") {
 				if (symbol == 'r') { status = "0203"; tempWord += symbol; POINTER++; continue; }
-				if (symbol == 'a') { status = "0702"; tempWord += symbol; POINTER++; continue; }
+				if (symbol == 'a') { status = "0703"; tempWord += symbol; POINTER++; continue; }
 				if (symbol >= 'a' && symbol <= 'z') {
 					status = "1"; tempWord += symbol; POINTER++; continue;
 				}
@@ -114,12 +122,12 @@ namespace gcp {
 				if (symbol >= 'a' && symbol <= 'z') { status = "1"; tempWord += symbol; POINTER++; continue; }
 				status = "1"; continue;
 			}
-			if (status == "0702") {
-				if (symbol == 'r') { status = "0703"; tempWord += symbol; POINTER++; continue; }
+			if (status == "0703") {
+				if (symbol == 'r') { status = "0704"; tempWord += symbol; POINTER++; continue; }
 				if (symbol >= 'a' && symbol <= 'z') { status = "1"; tempWord += symbol; POINTER++; continue; }
 				status = "1"; continue;
 			}
-			if (status == "0703") {
+			if (status == "0704") {
 				if (symbol == 't') { tempWord += symbol; POINTER++; return twoTuple("start", tempWord); }
 				if (symbol >= 'a' && symbol <= 'z') { status = "1"; tempWord += symbol; POINTER++; continue; }
 				status = "1"; continue;

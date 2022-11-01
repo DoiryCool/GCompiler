@@ -25,6 +25,8 @@ namespace gcp {
 		void init();
 		void getStringFromTxt(string);
 		void writeStringToTxt(string);
+		int getPointer();
+		void setPointer(int POINTER);
 		string getString();
 
 		twoTuple nextInput();

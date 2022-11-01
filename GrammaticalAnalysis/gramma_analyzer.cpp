@@ -32,28 +32,32 @@ namespace gcp {
 			std::cout << "[词] : 识别到下一个单词为：" + m_current_input.getTwoTuple() << std::endl;
 			return true;
 		}
-		std::cout << "[语] : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败" << std::endl;
+		std::cout << "[语] ERROR : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败" << std::endl;
+		WriteToFile("[语] ERROR : 【" + type + "】与读头下【" + m_current_input.getType() + "】不相同，匹配失败");
 		m_current_input = LA.nextInput();
 		return false;
 	}
 
 	bool GrammaAnalyzer::P() {
 		// P -> string I ; D
-		std::cout << "[语] : 推导 <程序> → <变量说明部分>;<语句部分>" << std::endl;
-		match("string");
+		WriteToFile("[语] : 开始处理 <程序> → <变量说明部分>;<语句部分>");
+		std::cout << "[语] : 开始处理 <程序> → <变量说明部分>;<语句部分>" << std::endl;
+		if (!match("string")) return false;
 		I("string");
-		match("分号");
+		if (!match("分号")) return false;
 		D();
+		WriteToFile("-------------------------语法分析结束--------------------");
+		std::cout << "-------------------------语法分析结束--------------------" << std::endl;
 		return true;
 	}
 
 	bool GrammaAnalyzer::I(string type) {
 		// I -> i Ip 
-		std::cout << "[语] : 推导 <标识符列表> → <标识符列表>,<标识符>|<标识符>" << std::endl;
+		std::cout << "[语] : 开始处理 <标识符列表> → <标识符列表>,<标识符>|<标识符>" << std::endl;
 		string name = m_current_input.getValue();
 		m_identifer_table.AddName(name);
 		m_identifer_table.UpdateType(name, type);
-		match("标识符");
+		if (!match("标识符")) return false;
 		Ip(type);
 		return true;
 	}
@@ -61,7 +65,7 @@ namespace gcp {
 	bool GrammaAnalyzer::D() {
 		// D -> S ; Dp
 		S();
-		match("分号");
+		if (!match("分号")) return false;
 		Dp();
 		return true;
 	}
@@ -70,10 +74,10 @@ namespace gcp {
 		// Ip -> , i Ip | ε
 		if (m_current_input.getType() == "逗号") {
 			// Ip -> , i Ip
-			match("逗号");
+			if (!match("逗号")) return false;
 			string name = m_current_input.getValue();
 			m_identifer_table.AddName(name);
-			match("标识符");
+			if (!match("标识符")) return false;
 			m_identifer_table.UpdateType(name, type);
 			Ip(type);
 			return true;
@@ -106,12 +110,17 @@ namespace gcp {
 		// Dp -> S ; Dp | ε
 		if (m_current_input.getType() == "标识符" || m_current_input.getType() == "if" || m_current_input.getType() == "do") {
 			S();
-			match("分号");
+			if (!match("分号")) return false;
 			Dp();
 			return true;
 		}
-		if (m_current_input.getType() == "#" || m_current_input.getType() == "end") {
+		if (m_current_input.getType() == "end") {
 			// Dp -> ε
+			return true;
+		}
+		if (m_current_input.getType() == "#") {
+			WriteToFile("-------------------------词法分析结束--------------------");
+			std::cout << "-------------------------词法分析结束--------------------" << std::endl;
 			return true;
 		}
 		return false;
@@ -120,8 +129,8 @@ namespace gcp {
 	bool GrammaAnalyzer::A() {
 		// A -> i = E
 		string name = m_current_input.getValue();
-		match("标识符");
-		match("赋值号");
+		if (!match("标识符")) return false;
+		if (!match("赋值号")) return false;
 		IdentiferTable::identifier E1 = E();
 		m_identifer_table.UpdateValue(name, E1.value);
 		m_middle_code_table.AddItem("=", E1.value, "null", name);
@@ -131,20 +140,20 @@ namespace gcp {
 
 	bool GrammaAnalyzer::C() {
 		// C -> if ( F ) N else N 
-		match("if");
-		match("左括号");
+		if (!match("if")) return false;
+		if (!match("左括号")) return false;
 		IdentiferTable::identifier F1 = F();
 
 		int trueExit = m_middle_code_table.getNXQ() + 2;
 		m_middle_code_table.AddItem("jnz", F1.name, "null", std::to_string(trueExit));
 		int falseExit = m_middle_code_table.getNXQ();
 		m_middle_code_table.AddItem("j", "null", "null", "0");
-		match("右括号");
+		if (!match("右括号")) return false;
 		N();
 		int Exit = m_middle_code_table.getNXQ();
 		m_middle_code_table.AddItem("j", "null", "null", "0");
 		m_middle_code_table.backPath(falseExit, std::to_string(m_middle_code_table.getNXQ()));
-		match("else");
+		if (!match("else")) return false;
 		N();
 		m_middle_code_table.backPath(Exit, std::to_string(m_middle_code_table.getNXQ()));
 		return true;
@@ -152,12 +161,20 @@ namespace gcp {
 
 	bool GrammaAnalyzer::L() {
 		// L -> do N while ( F )
-		match("do");
+		NEXTR : int nextP = LA.getPointer();
+		if (!match("do")) return false;
+		int NEXT = m_middle_code_table.getNXQ();
 		N();
-		match("while");
-		match("左括号");
-		F();
-		match("右括号");
+		if (!match("while")) return false;
+		if (!match("左括号")) return false;
+		IdentiferTable::identifier F1 = F();
+		m_middle_code_table.AddItem("jnz", F1.name, "null", std::to_string(NEXT));
+		if (!match("右括号")) return false;
+		if (F1.value == "true") {
+			LA.setPointer(nextP);
+			goto NEXTR;
+		}
+		std::cout << "[语义] ： 产生四元式" << std::endl;
 		return true;
 	}
 
@@ -178,8 +195,57 @@ namespace gcp {
 
 		IdentiferTable::identifier temp = m_temp_var_table.tempVar();
 		temp.type = "bool";
+		temp.value = "false";
+		if (operater == "<") {
+			if (E1.value.length() < E2.value.length()) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
+		if (operater == "<=") {
+			if (E1.value.length() <= E2.value.length()) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
+		if (operater == ">") {
+			if (E1.value.length() > E2.value.length()) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
+		if (operater == ">=") {
+			if (E1.value.length() >= E2.value.length()) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
+		if (operater == "==") {
+			if (E1.value == E2.value) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
+		if (operater == "<>") {
+			if (E1.value != E2.value) {
+				temp.value = "true";
+			}
+			else {
+				temp.value = "false";
+			}
+		}
 		m_middle_code_table.AddItem(operater, E1.name, E2.name, temp.name);
-		//temp.value
+		std::cout << "[语义] ： 产生四元式" << std::endl;
 		return temp;
 	}
 
@@ -276,9 +342,9 @@ namespace gcp {
 
 	bool GrammaAnalyzer::M() {
 		// M -> start D end
-		match("start");
+		if (!match("start")) return false;
 		D();
-		match("end");
+		if (!match("end")) return false;
 	 	return true;
 	}
 
