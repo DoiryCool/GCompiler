@@ -385,7 +385,7 @@ namespace gcp {
 			IdentiferTable::identifier temp = m_temp_var_table.tempVar();
 			temp.type = tempIn.type;
 			temp.value = tempIn.value;
-			for (int i = 0; i < std::stoi(tempId.value); i++) {
+			for (int i = 0; i < std::stoi(tempId.value) - 1; i++) {
 				temp.value = temp.value.substr(0, temp.value.length() - 1) + tempIn.value.substr(1, tempIn.value.length() - 1);
 			}
 			m_temp_var_table.addTempVar(temp);

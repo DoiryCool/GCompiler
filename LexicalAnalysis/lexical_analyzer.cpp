@@ -44,6 +44,10 @@ namespace gcp {
 		else return "failed : The string is NULL.";
 	}
 
+	string LexicalAnalyzer::correctKeyWord(string) {
+
+	}
+
 	twoTuple LexicalAnalyzer::nextInput() {
 		string tempWord;
 		string status = "0";
