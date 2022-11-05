@@ -28,10 +28,10 @@ namespace gcp {
 		int getPointer();
 		void setPointer(int POINTER);
 		string correctKeyWord(string);
+		string checkKeyWord(string);
 		string getString();
 
 		twoTuple nextInput();
-		void start();
 	};
 }
 

@@ -20,10 +20,12 @@ namespace gcp {
 	}
 
 	void MiddleCodeTable::Print() {
-		std::cout << "---------中间代码表---------" << std::endl;
+		std::ofstream dfs("debug.txt", std::ios::app);
+		dfs << "---------中间代码表---------" << std::endl;
 		for (int i = 0; i < table.size(); i++) {
-			std::cout << "(" << i << ")" + table[i].getFourTuple() << std::endl;
+			dfs << "(" << i << ")" + table[i].getFourTuple() << std::endl;
 		}
+		dfs.close();
 	}
 
 	MiddleCodeTable::~MiddleCodeTable() {

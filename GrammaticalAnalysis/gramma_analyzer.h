@@ -15,14 +15,14 @@ namespace gcp {
 	class GrammaAnalyzer
 	{
 	private:
-		struct identifier {
-			std::string name = "";
-			std::string value = "";
-			std::string type = "";
-		};
-
 		gcp::LexicalAnalyzer LA;
 		gcp::twoTuple m_current_input;
+
+		string level;						//save the debug output-level variable
+		string m_output_program;			///output the formatted statement
+		string outLevel;					//save the to format statement output-level variable
+
+		IdentiferTable::identifier errorId{"ERROR", "error", "null"};					//match error variable
 
 		public:
 			GrammaAnalyzer();
@@ -53,7 +53,6 @@ namespace gcp {
 			gcp::IdentiferTable m_identifer_table;
 			gcp::MiddleCodeTable m_middle_code_table;
 			gcp::TempVarTable m_temp_var_table;
-
 
 	};
 }

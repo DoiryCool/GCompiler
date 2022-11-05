@@ -27,8 +27,9 @@ namespace gcp {
 	}
 
 	void LexicalAnalyzer::writeStringToTxt(string s) {
-		std::ofstream ofs("out.txt", std::ios::end);
+		std::ofstream ofs("debug.txt", std::ios::app);
 		ofs << s << std::endl;
+		ofs.close();
 	}
 
 	int LexicalAnalyzer::getPointer() {
@@ -45,7 +46,11 @@ namespace gcp {
 	}
 
 	string LexicalAnalyzer::correctKeyWord(string) {
+		return "";
+	}
 
+	string LexicalAnalyzer::checkKeyWord(string Word) {
+		return "";
 	}
 
 	twoTuple LexicalAnalyzer::nextInput() {
@@ -55,7 +60,13 @@ namespace gcp {
 		while (m_input_string[POINTER] != '#') {
 			char symbol = m_input_string[POINTER];
 			if (symbol == ' ') { POINTER++; continue; }
-
+			/*
+			if ((symbol < 'a' || symbol > 'z') && (symbol < '0' || symbol > '9')
+				&& symbol != '"' && symbol != '<' && symbol != '>' && symbol != '='
+				&& symbol != ';' && symbol != ',' && symbol != '(' && symbol != ')' && symbol != '+' && symbol != '*') {
+				writeStringToTxt("识别到与该文法不匹配的字符 : " + std::to_string(symbol));
+				break;
+			}*/
 			if (status == "0") {
 				// detect keywords
 				if (symbol >= 'a' && symbol <= 'z') {
@@ -75,7 +86,7 @@ namespace gcp {
 				// detect signals
 				else {
 					switch (symbol) {
-					case '"': {status = "0901"; tempWord += symbol; POINTER++; continue; }
+					case '"': {status = "0901"; POINTER++; continue; }
 					case '<': {status = "1001"; tempWord += symbol; POINTER++; continue; }
 					case '>': {status = "1101"; tempWord += symbol; POINTER++; continue; }
 					case '=': {status = "1201"; tempWord += symbol; POINTER++; continue; }
@@ -193,7 +204,7 @@ namespace gcp {
 				else if (symbol == '"') { status = "0902"; continue; }
 			}
 			if (status == "0902") {
-				tempWord += symbol; POINTER++; return twoTuple("字符串", tempWord);
+				POINTER++; return twoTuple("字符串", tempWord);
 			}
 			if (status == "1001") {
 				if (symbol == '=') { tempWord += symbol; POINTER++; return twoTuple("关系运算符", tempWord); }

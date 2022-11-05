@@ -18,11 +18,21 @@ namespace gcp {
 	}
 
 	void TempVarTable::Print() {
-		std::cout << "---------临时变量表---------" << std::endl;
-		std::cout << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
+		std::ofstream ofs("out.txt", std::ios::app);
+		std::ofstream dfs("debug.txt", std::ios::app);
+		//std::cout << "---------临时变量表---------" << std::endl;
+		ofs << "---------临时变量表---------" << std::endl;
+		dfs << "---------临时变量表---------" << std::endl;
+		//std::cout << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
+		ofs << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
+		dfs << "---------(标识符名 ， 类型 ， 值)---------" << std::endl;
 		for (int i = 0; i < table.size(); i++) {
-			std::cout << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
+			//std::cout << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
+			ofs << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
+			dfs << "(" + table[i].name + " , " << table[i].type + " , " << table[i].value + ")" << std::endl;
 		}
+		ofs.close();
+		dfs.close();
 	}
 
 	TempVarTable::~TempVarTable() {
