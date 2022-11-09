@@ -10,7 +10,7 @@ namespace gcp {
 	class IdentiferTable {
 
 	private:
-		
+		int IN = 1;
 
 	public:
 		IdentiferTable();
@@ -20,6 +20,7 @@ namespace gcp {
 			std::string name = "";
 			std::string type = "";
 			std::string value = "";
+			int IN;
 		};
 
 		int GetIndex(std::string name);

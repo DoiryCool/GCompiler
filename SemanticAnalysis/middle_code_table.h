@@ -12,8 +12,9 @@ namespace gcp {
 		MiddleCodeTable();
 		~MiddleCodeTable();
 
-		bool AddItem(string op1, string op2, string op3, string op4);
+		bool AddItem(string op1, string op2, string op3, string op4, string result = "");
 		int getNXQ();
+		std::vector<FourTuple> getTable();
 		bool backPath(int index, string op4);
 		void Print();
 

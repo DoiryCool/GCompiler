@@ -23,9 +23,11 @@ namespace gcp {
 		string outLevel;					//save the to format statement output-level variable
 
 		IdentiferTable::identifier errorId{"ERROR", "error", "null"};					//match error variable
+		bool OPT_FLAG;
+		bool SAME_FLAG = false;
 
 		public:
-			GrammaAnalyzer();
+			GrammaAnalyzer(string file, bool mid_code_opt = false);
 			~GrammaAnalyzer();
 			bool WriteToDebugFile(string);
 			bool WriteToOutFile(string);
@@ -40,12 +42,12 @@ namespace gcp {
 			bool A();
 			bool C();
 			bool L();
-			IdentiferTable::identifier E();
+			IdentiferTable::identifier E(string name = "");
 			IdentiferTable::identifier F();
 			bool N();
-			IdentiferTable::identifier G();
+			IdentiferTable::identifier G(string name = "");
 			IdentiferTable::identifier Ep(IdentiferTable::identifier tempId);
-			IdentiferTable::identifier Y();
+			IdentiferTable::identifier Y(string name = "");
 			IdentiferTable::identifier Gp(IdentiferTable::identifier tempId);
 			bool H();
 			bool M();

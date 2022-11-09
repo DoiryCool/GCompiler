@@ -33,6 +33,7 @@ namespace gcp {
 
 		identifier tempIden;
 		tempIden.name = name;
+		tempIden.IN = IN++;
 		table.push_back(tempIden);
 		return true;
 	}

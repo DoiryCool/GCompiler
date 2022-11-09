@@ -2,8 +2,9 @@
 
 namespace gcp {
 
-	GrammaAnalyzer::GrammaAnalyzer() {
-		LA.getStringFromTxt("in.txt");
+	GrammaAnalyzer::GrammaAnalyzer(string file, bool mid_code_opt) {
+		OPT_FLAG = mid_code_opt;
+		LA.getStringFromTxt(file);
 		m_current_input = LA.nextInput();
 		WriteToDebugFile(level + "[词] : 识别到第一个单词为：" + m_current_input.getTwoTuple());
 	}
@@ -151,11 +152,8 @@ namespace gcp {
 		}
 		if (m_current_input.getType() == "end" || m_current_input.getType() == "#") {
 			// Dp -> ε
+			WriteToDebugFile(level + "[语] : 选择 <语句部分prime> → ε");
 			WriteToDebugFile("-------------------------词法分析结束--------------------");
-			// Dp -> ε
-			WriteToDebugFile("[语] : 选择 <语句部分prime> → ε");
-			WriteToDebugFile("-------------------------词法分析结束--------------------");
-			std::cout << "-------------------------词法分析结束--------------------" << std::endl;
 			return true;
 		}
 		return false;
@@ -170,18 +168,19 @@ namespace gcp {
 		if (!match("赋值号")) return false;
 		m_output_program += " = ";
 		level += "----";
-		IdentiferTable::identifier E1 = E();
+		IdentiferTable::identifier E1 = E(name);
+		level = level.substr(0, level.length() - 4);
+		if (SAME_FLAG == true) {
+			WriteToDebugFile(level + "[优] WARNING : 赋值号左右两侧相等！");
+			return true;
+		}
 		if (E1.name == "ERROR") {
 			return false;
 		}
-		level = level.substr(0, level.length() - 4);
 		m_identifer_table.UpdateValue(name, E1.value);
 		WriteToDebugFile(level + "[翻] : 更新标识符 【" + name + "】的值为"+ E1.value);
 		m_middle_code_table.AddItem("=", E1.name != "" ? E1.name : E1.value, "null", name);
-		WriteToDebugFile("[翻] ： 产生赋值语句四元式");
-		WriteToDebugFile("[翻] : 更新标识符 【" + name + "】的值为"+ E1.value);
-		m_middle_code_table.AddItem("=", E1.value, "null", name);
-		WriteToDebugFile("[翻] ： 产生赋值语句四元式");
+		WriteToDebugFile(level + "[翻] ： 产生赋值语句四元式");
 		return true;
 	}
 
@@ -255,13 +254,16 @@ namespace gcp {
 		return true;
 	}
 
-	IdentiferTable::identifier GrammaAnalyzer::E() {
+	IdentiferTable::identifier GrammaAnalyzer::E(string name) {
 		// E -> G Ep
 		WriteToDebugFile(level + "[语] : <表达式> → <项><表达式prime>");
-		IdentiferTable::identifier tempG = G();
+		IdentiferTable::identifier tempG = G(name);
 		IdentiferTable::identifier tempEp = Ep(tempG);
+		if (OPT_FLAG == true && tempG.value != tempEp.value) {
+			SAME_FLAG = false;
+		}
 		return tempEp;
-	}
+	} 
 
 	IdentiferTable::identifier GrammaAnalyzer::F() {
 		// F -> E g E
@@ -337,8 +339,9 @@ namespace gcp {
 				temp.value = "false";
 			}
 		}
-		m_middle_code_table.AddItem(operater, E1.name, E2.name, temp.name);
-		WriteToDebugFile("[翻] ： 产生关系运算四元式");
+		m_middle_code_table.AddItem(operater, E1.name, E2.name, temp.name); 
+		m_temp_var_table.addTempVar(temp);
+		WriteToDebugFile(level + "[翻] ： 产生关系运算四元式");
 		return temp;
 	}
 
@@ -364,11 +367,14 @@ namespace gcp {
 		return false;
 	}
 
-	IdentiferTable::identifier GrammaAnalyzer::G() {
+	IdentiferTable::identifier GrammaAnalyzer::G(string name) {
 		// G -> Y Gp
 		WriteToDebugFile(level + "[语] : <项> → <因子><项prime>");
-		IdentiferTable::identifier tempY = Y();
+		IdentiferTable::identifier tempY = Y(name);
 		IdentiferTable::identifier tempGp = Gp(tempY);
+		if (OPT_FLAG == true && tempGp.value != tempY.value) {
+			SAME_FLAG = false;
+		}
 		return tempGp;
 	}
 
@@ -385,12 +391,41 @@ namespace gcp {
 			level += "----";
 			IdentiferTable::identifier tempG = G();
 			level = level.substr(0, level.length() - 4);
+
+			//公共子表达式优化
+			if (OPT_FLAG) {
+			std::vector<FourTuple> midCodeTable = m_middle_code_table.getTable();
+			for (int i = 0; i < m_middle_code_table.getNXQ(); ++i) {
+				FourTuple::fourTupleSt temp4 = midCodeTable[i].getFourTupleSt();
+				if (temp4.op1 == "+") {
+					if ((temp4.op2 == tempId.name && temp4.op3 == tempG.name) || (temp4.op3 == tempId.name && temp4.op2 == tempG.name)) {
+						bool check = true;
+						for (int j = i; j < m_middle_code_table.getNXQ(); ++j) {
+							FourTuple::fourTupleSt temp4inside = midCodeTable[j].getFourTupleSt();
+							if (temp4.op2 == temp4inside.op4 || temp4.op3 == temp4inside.op4) {
+								check = false;
+								break;
+							}
+						}
+						if (check) {
+							WriteToDebugFile(level + "[优] : 公共子表达式优化完成");
+							IdentiferTable::identifier temp;
+							temp.name = temp4.op4;
+							temp.value = temp4.result;
+							return temp;
+
+						}
+					}
+				}
+			}
+			}
+			
 			IdentiferTable::identifier temp = m_temp_var_table.tempVar();
 			WriteToDebugFile(level + "[翻] : 创建连接运算临时变量");
 			temp.type = tempId.type;
 			temp.value = tempId.value + tempG.value;
 			m_temp_var_table.addTempVar(temp);
-			m_middle_code_table.AddItem("+", tempId.name != "" ?tempId.name : tempId.value, tempG.name != "" ? tempG.name : tempG.value, temp.name);
+			m_middle_code_table.AddItem("+", tempId.name != "" ?tempId.name : tempId.value, tempG.name != "" ? tempG.name : tempG.value, temp.name, temp.value);
 			WriteToDebugFile(level + "[翻] ： 产生连接运算四元式");
 			IdentiferTable::identifier tempEp = Ep(temp);
 			return tempEp;
@@ -403,7 +438,7 @@ namespace gcp {
 		return tempId;
 	}
 
-	IdentiferTable::identifier GrammaAnalyzer::Y() {
+	IdentiferTable::identifier GrammaAnalyzer::Y(string nameLeft) {
 		// Y -> i | s | ( E )
 		if (m_current_input.getType() == "标识符") {
 			// Y -> i
@@ -412,7 +447,12 @@ namespace gcp {
 			if (!match("标识符")) {
 				return errorId;
 			}
-			m_output_program += "\"" + name + "\"";
+			if (OPT_FLAG) {
+				if (nameLeft == name) {
+					SAME_FLAG = true;
+				}
+			}
+			m_output_program +=  name;
 			WriteToDebugFile(level + "[翻] : 获取表达式中标识符【" + name + "】值" + m_identifer_table.getIdentifer(name).value);
 			return m_identifer_table.getIdentifer(name);
 		}
@@ -454,8 +494,9 @@ namespace gcp {
 		// Gp -> * n Gp | ε
 		if (m_current_input.getType() == "重复运算符") {
 			// Gp -> j n Gp
-			WriteToDebugFile("[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
+			WriteToDebugFile(level + "[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
 			match("重复运算符");
+			m_output_program += " * ";
 			IdentiferTable::identifier tempId;
 			WriteToDebugFile(level + "[翻] : 创建重复运算临时变量");
 			tempId.value = m_current_input.getValue();
@@ -485,7 +526,7 @@ namespace gcp {
 
 	bool GrammaAnalyzer::M() {
 		// M -> start D end
-		WriteToDebugFile("[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
+		WriteToDebugFile(level + "[语] : 选择 <项prime> → <重复运算符><数字><项prime>");
 		if (!match("start")) return false;
 		m_output_program += outLevel + "start\n";
 		outLevel += "  ";

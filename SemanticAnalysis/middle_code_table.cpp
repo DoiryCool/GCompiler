@@ -5,8 +5,8 @@ namespace gcp {
 
 	}
 
-	bool MiddleCodeTable::AddItem(string op1, string op2, string op3, string op4) {
-		table.push_back(FourTuple(op1, op2, op3, op4));
+	bool MiddleCodeTable::AddItem(string op1, string op2, string op3, string op4, string result) {
+		table.push_back(FourTuple(op1, op2, op3, op4, result));
 		return true;
 	}
 
@@ -17,6 +17,10 @@ namespace gcp {
 	bool MiddleCodeTable::backPath(int index, string op4) {
 		table[index].updateOp4(op4);
 		return true;
+	}
+
+	std::vector<FourTuple> MiddleCodeTable::getTable() {
+		return table;
 	}
 
 	void MiddleCodeTable::Print() {
